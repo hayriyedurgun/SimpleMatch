@@ -1,4 +1,5 @@
-﻿using Assets._Scripts.Utils;
+﻿using Assets._Scripts.Managers;
+using Assets._Scripts.Utils;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -13,6 +14,7 @@ namespace Assets._Scripts
         private TileBehaviour[,] m_Tiles;
         private float m_TileSize;
         private Vector3 m_Offset;
+        private List<TileBehaviour> m_SearchList = new List<TileBehaviour>();
 
         [SerializeField]
         private int m_Size;
@@ -22,6 +24,17 @@ namespace Assets._Scripts
         private WindowController m_WindowController;
         [SerializeField]
         private GridInputController m_InputController;
+
+        private int m_MatchCount;
+        public int MatchCount
+        {
+            get => m_MatchCount;
+            set
+            {
+                m_MatchCount = value;
+                OnMatchCountChanged();
+            }
+        }
 
         private void Start()
         {
@@ -37,6 +50,7 @@ namespace Assets._Scripts
 
             CalculateTileSize();
             CreateTiles();
+            MatchCount = 0;
         }
 
         private void OnDestroy()
@@ -138,50 +152,73 @@ namespace Assets._Scripts
             var x = tile.PosX;
             var y = tile.PosY;
 
-            var leftmost = Mathf.Max(0, x - 2);
-            var rightMost = Mathf.Min(m_Tiles.GetLength(0), x + 2);
+            m_SearchList.Clear();
 
-            var topMost = Mathf.Min(m_Tiles.GetLength(1), y + 2);
-            var bottomMost = Mathf.Max(0, y - 2);
-
-            var matchFound = false;
-
-            if (leftmost >= 0)
+            var neigbours = FindNeighbors(tile);
+            if (neigbours.Count >= 3)
             {
-                for (int i = leftmost; i <= rightMost; i++)
-                {
-                    if (i + 2 < m_Tiles.GetLength(0) &&
-                        !m_Tiles[i, y].IsAvailable &&
-                        !m_Tiles[i + 1, y].IsAvailable &&
-                        !m_Tiles[i + 2, y].IsAvailable)
-                    {
-                        m_Tiles[i, y].IsAvailable = true;
-                        m_Tiles[i + 1, y].IsAvailable = true;
-                        m_Tiles[i + 2, y].IsAvailable = true;
-                        matchFound = true;
+                neigbours.ForEach(x => x.IsAvailable = true);
+                MatchCount++;
+            }
+        }
 
-                        break;
-                    }
+        private List<TileBehaviour> FindNeighbors(TileBehaviour tile)
+        {
+            var list = new List<TileBehaviour>();
+            var x = tile.PosX;
+            var y = tile.PosY;
+
+            TileBehaviour neighbor;
+            if (x + 1 < m_Size)
+            {
+                neighbor = m_Tiles[x + 1, y];
+                if (!neighbor.IsAvailable && !m_SearchList.Contains(neighbor))
+                {
+                    list.Add(neighbor);
+                    m_SearchList.Add(neighbor);
+                }
+            }
+            if (x + -1 >= 0)
+            {
+                neighbor = m_Tiles[x + -1, y];
+                if (!neighbor.IsAvailable && !m_SearchList.Contains(neighbor))
+                {
+                    list.Add(neighbor);
+                    m_SearchList.Add(neighbor);
+                }
+            }
+            if (y + 1 < m_Size)
+            {
+                neighbor = m_Tiles[x, y + 1];
+                if (!neighbor.IsAvailable && !m_SearchList.Contains(neighbor))
+                {
+                    list.Add(neighbor);
+                    m_SearchList.Add(neighbor);
+                }
+
+            }
+            if (y - 1 >= 0)
+            {
+                neighbor = m_Tiles[x, y - 1];
+                if (!neighbor.IsAvailable && !m_SearchList.Contains(neighbor))
+                {
+                    list.Add(neighbor);
+                    m_SearchList.Add(neighbor);
                 }
             }
 
-            if (bottomMost >= 0 &&
-                !matchFound)
+            var listCount = list.Count;
+            for (int i = 0; i < listCount; i++)
             {
-                for (int i = bottomMost; i <= topMost; i++)
-                {
-                    if (i + 2 < m_Tiles.GetLength(1) &&
-                        !m_Tiles[x, i].IsAvailable &&
-                        !m_Tiles[x, i + 1].IsAvailable &&
-                        !m_Tiles[x, i + 2].IsAvailable)
-                    {
-                        m_Tiles[x, i].IsAvailable = true;
-                        m_Tiles[x, i + 1].IsAvailable = true;
-                        m_Tiles[x, i + 2].IsAvailable = true;
-                        break;
-                    }
-                }
+                list.AddRange(FindNeighbors(list[i]));
             }
+
+            return list;
+        }
+
+        private void OnMatchCountChanged()
+        {
+            GUIManager.Instance.MatchCountText.SetText($"Match count: {MatchCount}");
         }
     }
 }
