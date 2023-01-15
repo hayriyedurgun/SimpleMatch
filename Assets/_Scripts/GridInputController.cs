@@ -17,10 +17,14 @@ namespace Assets._Scripts
 
         private void Update()
         {
-            if (Input.GetMouseButtonDown(0) &&
-                Physics.Raycast(Camera.main.ScreenToWorldPoint(Input.mousePosition), Vector3.zero, out m_Hit, 10f, LayerHelper.Or(Layer.Tile)))
+            if (Input.GetMouseButtonDown(0))
             {
-                OnClicked();
+                var ray = Camera.main.ScreenPointToRay(Input.mousePosition);
+                var result = Physics.Raycast(ray, out m_Hit, int.MaxValue, LayerHelper.Or(Layer.Tile));
+                if (result)
+                {
+                    OnClicked();
+                }
             }
         }
 

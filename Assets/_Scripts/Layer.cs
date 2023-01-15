@@ -8,6 +8,7 @@ namespace Assets._Scripts
 {
     public enum Layer
     {
-        Tile = 6
+        Tile = 6,
+        HitPlane = 7
     }
 }

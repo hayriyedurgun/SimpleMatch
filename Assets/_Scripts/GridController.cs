@@ -12,7 +12,6 @@ namespace Assets._Scripts
     {
         private TileBehaviour[,] m_Tiles;
         private float m_TileSize;
-        private GridInputController m_InputController;
         private Vector3 m_Offset;
 
         [SerializeField]
@@ -21,7 +20,8 @@ namespace Assets._Scripts
         private TileBehaviour m_TilePrefab;
         [SerializeField]
         private WindowController m_WindowController;
-
+        [SerializeField]
+        private GridInputController m_InputController;
 
         private void Start()
         {
@@ -58,10 +58,9 @@ namespace Assets._Scripts
             //scale tiles depends on screen size.
             CalculateTileSize();
 
-            transform.position = new Vector3(Screen.width / 2, Screen.height / 2, 0);
             m_Offset = new Vector3(((m_TileSize * m_Size) / -2) + (m_TileSize / 2), ((m_TileSize * m_Size) / -2) + (m_TileSize / 2), 0);
 
-            var scaleSize = Mathf.Max(1, m_TileSize - 1);
+            var scaleSize = Mathf.Max(1f, m_TileSize - .1f);
             TileBehaviour tile;
 
             for (int x = 0; x < m_Size; x++)
@@ -71,25 +70,32 @@ namespace Assets._Scripts
                     tile = m_Tiles[x, y];
                     tile.transform.localScale = new Vector3(scaleSize, scaleSize, 0.1f);
                     tile.transform.localPosition = new Vector3(x * m_TileSize, y * m_TileSize, 0) + m_Offset;
-                    tile.Init(x, y, m_TileSize);
-                    m_Tiles[x, y] = tile;
                 }
             }
         }
 
         private void CalculateTileSize()
         {
-            var min = Mathf.Min(Screen.width, Screen.height);
-            m_TileSize = Mathf.FloorToInt(min / m_Size);
+            RaycastHit hit;
+            var ray = Camera.main.ScreenPointToRay(Vector3.zero);
+            Physics.Raycast(ray, out hit, int.MaxValue, LayerHelper.Or(Layer.HitPlane));
+            var bottomLeft = hit.point;
+
+            ray = Camera.main.ScreenPointToRay(new Vector3(Screen.width, Screen.height, 0));
+            Physics.Raycast(ray, out hit, int.MaxValue, LayerHelper.Or(Layer.HitPlane));
+            var upperRight = hit.point;
+
+            var diff = upperRight - bottomLeft;
+            var min = Mathf.Min(diff.x, diff.y);
+            m_TileSize = min / m_Size;
         }
 
         private void CreateTiles()
         {
-            transform.position = new Vector3(Screen.width / 2, Screen.height / 2, 0);
-            m_Offset = new Vector3(((m_TileSize * m_Size) / -2) + (m_TileSize / 2) , ((m_TileSize * m_Size) / -2) + (m_TileSize / 2), 0);
+            m_Offset = new Vector3(((m_TileSize * m_Size) / -2) + (m_TileSize / 2), ((m_TileSize * m_Size) / -2) + (m_TileSize / 2), 0);
             m_Tiles = new TileBehaviour[m_Size, m_Size];
             TileBehaviour tile;
-            var scaleSize = Mathf.Max(1, m_TileSize - 1);
+            var scaleSize = Mathf.Max(1f, m_TileSize - .1f);
 
             for (int x = 0; x < m_Size; x++)
             {
@@ -106,11 +112,10 @@ namespace Assets._Scripts
 
         private void OnClicked(Vector3 wordPos)
         {
-            //var pos = wordPos - Offset;
-            var pos = wordPos;
+            var pos = wordPos - m_Offset;
 
-            var x = Mathf.RoundToInt(pos.x / m_Size);
-            var y = Mathf.RoundToInt(pos.y / m_Size);
+            var x = Mathf.RoundToInt((pos.x / m_TileSize));
+            var y = Mathf.RoundToInt((pos.y / m_TileSize));
 
             if (m_Tiles.GetLength(0) < x + 1 ||
                 m_Tiles.GetLength(1) < y + 1 ||
@@ -121,7 +126,7 @@ namespace Assets._Scripts
             }
 
             var tile = m_Tiles[x, y];
-            tile.IsAvailable = true;
+            tile.IsAvailable = false;
 
             CheckMatch(tile);
         }
