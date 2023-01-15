@@ -60,7 +60,8 @@ namespace Assets._Scripts
 
             m_Offset = new Vector3(((m_TileSize * m_Size) / -2) + (m_TileSize / 2), ((m_TileSize * m_Size) / -2) + (m_TileSize / 2), 0);
 
-            var scaleSize = Mathf.Max(1f, m_TileSize - .1f);
+            var scaleSize = m_TileSize * 0.95f;
+
             TileBehaviour tile;
 
             for (int x = 0; x < m_Size; x++)
@@ -76,6 +77,7 @@ namespace Assets._Scripts
 
         private void CalculateTileSize()
         {
+            if (!Camera.main) return;
             RaycastHit hit;
             var ray = Camera.main.ScreenPointToRay(Vector3.zero);
             Physics.Raycast(ray, out hit, int.MaxValue, LayerHelper.Or(Layer.HitPlane));
@@ -95,7 +97,7 @@ namespace Assets._Scripts
             m_Offset = new Vector3(((m_TileSize * m_Size) / -2) + (m_TileSize / 2), ((m_TileSize * m_Size) / -2) + (m_TileSize / 2), 0);
             m_Tiles = new TileBehaviour[m_Size, m_Size];
             TileBehaviour tile;
-            var scaleSize = Mathf.Max(1f, m_TileSize - .1f);
+            var scaleSize = m_TileSize * .95f;
 
             for (int x = 0; x < m_Size; x++)
             {
@@ -133,6 +135,53 @@ namespace Assets._Scripts
 
         private void CheckMatch(TileBehaviour tile)
         {
+            var x = tile.PosX;
+            var y = tile.PosY;
+
+            var leftmost = Mathf.Max(0, x - 2);
+            var rightMost = Mathf.Min(m_Tiles.GetLength(0), x + 2);
+
+            var topMost = Mathf.Min(m_Tiles.GetLength(1), y + 2);
+            var bottomMost = Mathf.Max(0, y - 2);
+
+            var matchFound = false;
+
+            if (leftmost >= 0)
+            {
+                for (int i = leftmost; i <= rightMost; i++)
+                {
+                    if (i + 2 < m_Tiles.GetLength(0) &&
+                        !m_Tiles[i, y].IsAvailable &&
+                        !m_Tiles[i + 1, y].IsAvailable &&
+                        !m_Tiles[i + 2, y].IsAvailable)
+                    {
+                        m_Tiles[i, y].IsAvailable = true;
+                        m_Tiles[i + 1, y].IsAvailable = true;
+                        m_Tiles[i + 2, y].IsAvailable = true;
+                        matchFound = true;
+
+                        break;
+                    }
+                }
+            }
+
+            if (bottomMost >= 0 &&
+                !matchFound)
+            {
+                for (int i = bottomMost; i <= topMost; i++)
+                {
+                    if (i + 2 < m_Tiles.GetLength(1) &&
+                        !m_Tiles[x, i].IsAvailable &&
+                        !m_Tiles[x, i + 1].IsAvailable &&
+                        !m_Tiles[x, i + 2].IsAvailable)
+                    {
+                        m_Tiles[x, i].IsAvailable = true;
+                        m_Tiles[x, i + 1].IsAvailable = true;
+                        m_Tiles[x, i + 2].IsAvailable = true;
+                        break;
+                    }
+                }
+            }
         }
     }
 }
