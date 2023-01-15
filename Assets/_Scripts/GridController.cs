@@ -164,6 +164,7 @@ namespace Assets._Scripts
 
         private List<TileBehaviour> FindNeighbors(TileBehaviour tile)
         {
+            //TODO: performance improvement do not create list every time!
             var list = new List<TileBehaviour>();
             var x = tile.PosX;
             var y = tile.PosY;
